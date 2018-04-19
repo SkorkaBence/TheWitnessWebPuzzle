@@ -1,0 +1,58 @@
+{
+    "width": 1,
+    "height": 1,
+    "grid": [
+        [
+            {
+                "UpperLine": {
+                    "type": 1
+                },
+                "LeftLine": {
+                    "type": 0
+                },
+                "UpLeftCorner": {
+                    "type": 0
+                },
+                "Cell": {}
+            },
+            {
+                "UpperLine": {
+                    "type": 0
+                },
+                "LeftLine": {
+                    "type": 0
+                },
+                "UpLeftCorner": {
+                    "type": 0
+                },
+                "Cell": {}
+            }
+        ],
+        [
+            {
+                "UpperLine": {
+                    "type": 0
+                },
+                "LeftLine": {
+                    "type": 1
+                },
+                "UpLeftCorner": {
+                    "type": 0
+                },
+                "Cell": {}
+            },
+            {
+                "UpperLine": {
+                    "type": 0
+                },
+                "LeftLine": {
+                    "type": 0
+                },
+                "UpLeftCorner": {
+                    "type": 1
+                },
+                "Cell": {}
+            }
+        ]
+    ]
+}
