@@ -37,10 +37,11 @@ class InGame extends Scene {
 
     private StartPoints : StartingPoint[] = [];
     private StartPointRadius : number = 0;
-    private CursorPath : CursorCoordinate[] = [];
+    //private CursorPath : CursorCoordinate[] = [];
     private CursorLoced : boolean = false;
     private CursorLineAnimationStart : number = 0;
     private CursorSelectedDirection : Axis = Axis.None;
+    private DrawnLine : DrawnLine|null = null;
 
     constructor(panel : Panel) {
         super();
@@ -147,102 +148,15 @@ class InGame extends Scene {
         if (!this.CursorLoced) {
             this.CursorX = event.clientX;
             this.CursorY = event.clientY;
-        } else {
-            const posInCellsX = (this.CursorX - this.left) / this.blockWidth;
-            const nearestCellX = Math.round(posInCellsX);
-            const posInCellsY = (this.CursorY - this.top) / this.blockHeight;
-            const nearestCellY = Math.round(posInCellsY);
+        } else if (this.DrawnLine) {
+            const movementX = event.movementX / this.blockWidth;
+            const movementY = event.movementY / this.blockHeight;
+            this.DrawnLine.MoveMouse(movementX, movementY);
 
-            const nearestCell = this.Panel.Grid[nearestCellX][nearestCellY];
+            const cursor = this.DrawnLine.GetCursor();
 
-            const d = Distance(posInCellsX, posInCellsY, nearestCellX, nearestCellY);
-            const turningPoint = d < 0.03;
-
-            let lastFixedPoint = this.CursorPath.length - 1;
-            while(!this.CursorPath[lastFixedPoint].fixed) {
-                --lastFixedPoint;
-            }
-            const LastFixedCursorPathPoint = this.CursorPath[lastFixedPoint];
-            const LastCursorPathPoint = this.CursorPath[this.CursorPath.length - 1];
-
-            const lastFixedCell = this.Panel.Grid[LastFixedCursorPathPoint.x][LastFixedCursorPathPoint.y];
-
-            console.log(turningPoint, lastFixedPoint);
-
-            if (turningPoint) {
-                if ((nearestCell.PossibleDirections.Right && event.movementX > 0) || (nearestCell.PossibleDirections.Left && event.movementX < 0) || d > 0.01) {
-                    this.CursorX += event.movementX;
-                }
-                if ((nearestCell.PossibleDirections.Up && event.movementY < 0) || (nearestCell.PossibleDirections.Down && event.movementY > 0) || d > 0.01) {
-                    this.CursorY += event.movementY;                    
-                }
-                if (!LastCursorPathPoint.fixed && Math.round(LastCursorPathPoint.x) == LastFixedCursorPathPoint.x && Math.round(LastCursorPathPoint.y) == LastFixedCursorPathPoint.y) {
-                    console.log("NEW FIXED POINT POPPED!!!");
-                    while(!this.CursorPath[this.CursorPath.length - 1].fixed) {
-                        this.CursorPath.pop();
-                    }
-                    this.CursorPath[this.CursorPath.length - 1].fixed = false;
-                }
-                this.CursorSelectedDirection = Axis.None;
-            } else {
-                if (this.CursorSelectedDirection == Axis.None) {
-                    const dV = Math.abs(posInCellsY - nearestCellY);
-                    const dH = Math.abs(posInCellsX - nearestCellX);
-
-                    if (dH > dV) {
-                        this.CursorSelectedDirection = Axis.LeftRight;
-                    } else {
-                        this.CursorSelectedDirection = Axis.UpDown;
-                    }
-                }
-
-                if (this.CursorSelectedDirection == Axis.LeftRight) {
-                    this.CursorX += event.movementX;
-                    this.CursorY = this.top + nearestCellY * this.blockHeight;
-                    console.log("A");
-                } else if (this.CursorSelectedDirection == Axis.UpDown) {
-                    this.CursorY += event.movementY;
-                    this.CursorX = this.left + nearestCellX * this.blockWidth;
-                    console.log("B");
-                }
-
-                if (LastFixedCursorPathPoint.x != nearestCellX || LastFixedCursorPathPoint.y != nearestCellY) {
-                    console.log("NEW FIXED POINT CREATED!!!");
-                    while(!this.CursorPath[this.CursorPath.length - 1].fixed) {
-                        this.CursorPath.pop();
-                    }
-                    this.CursorPath.push({
-                        x: nearestCellX,
-                        y: nearestCellY,
-                        fixed: true
-                    });
-                }
-
-                if (this.CursorPath[this.CursorPath.length - 1].fixed) {
-                    this.CursorPath.push({
-                        x: posInCellsX,
-                        y: posInCellsY,
-                        fixed: false
-                    });
-                } else {
-                    this.CursorPath[this.CursorPath.length - 1].x = posInCellsX;
-                    this.CursorPath[this.CursorPath.length - 1].y = posInCellsY;
-                }
-            }
-
-            if (this.CursorX < 0) {
-                this.CursorX = 0;
-            }
-            if (this.CursorX > this.width) {
-                this.CursorX = this.width;
-            }
-
-            if (this.CursorY < 0) {
-                this.CursorY = 0;
-            }
-            if (this.CursorY > this.height) {
-                this.CursorY = this.height;
-            }
+            this.CursorX = this.left + cursor.x * this.blockWidth;
+            this.CursorY = this.top + cursor.y * this.blockHeight;
         }
     }
 
@@ -281,12 +195,7 @@ class InGame extends Scene {
 
                 this.CursorLoced = true;
 
-                this.CursorPath = [{
-                    x: sp.point.x,
-                    y: sp.point.y,
-                    fixed: true
-                }];
-
+                this.DrawnLine = new DrawnLine(this.Panel, sp.point.x, sp.point.y, this.blockWidth, this.blockHeight);
                 this.CursorX = sp.pixel.x;
                 this.CursorY = sp.pixel.y;
 
@@ -301,13 +210,12 @@ class InGame extends Scene {
 
             this.showStartPointAnimation = false;
             this.CursorLoced = true;
-            //this.ShowCursor = false;
             this.CursorLineAnimationStart = Date.now() - this.startTime;
         } else {
             this.CursorLoced = false;
             this.showStartPointAnimation = true;
             this.ShowCursor = true;
-            this.CursorPath = [];
+            this.DrawnLine = null;
         }
     }
 
@@ -319,7 +227,7 @@ class InGame extends Scene {
     private DrawCursor(ctx : CanvasRenderingContext2D) : void {
         if (this.ShowCursor) {
             ctx.strokeStyle = "rgba(0, 0, 0, 0.5)";
-            ctx.lineWidth = 10;
+            ctx.lineWidth = 4;
             ctx.fillStyle = "rgba(255, 255, 255, 0.5)";
 
             ctx.beginPath();
@@ -328,7 +236,7 @@ class InGame extends Scene {
             ctx.fill();
 
             ctx.beginPath();
-            ctx.arc(this.CursorX, this.CursorY, 20, 0, 2 * Math.PI);
+            ctx.arc(this.CursorX, this.CursorY, 16, 0, 2 * Math.PI);
             ctx.closePath();
             ctx.stroke();
         }
@@ -484,7 +392,7 @@ class InGame extends Scene {
 
             /* WHITE LINE */
 
-            if (this.CursorPath.length > 0) {
+            if (this.DrawnLine) {
                 let alpha = 1;
                 let radius = this.StartPointRadius;
                 if (DeltaTime - this.CursorLineAnimationStart <= 300) {
@@ -495,20 +403,24 @@ class InGame extends Scene {
                 ctx.fillStyle = ctx.strokeStyle;
                 ctx.lineWidth = lineWidth;
 
+                const pathPoints = this.DrawnLine.GetPoints();
+
                 ctx.beginPath();
-                ctx.arc(left + this.CursorPath[0].x * blockWidth, top + this.CursorPath[0].y * blockHeight, radius, 0, 2 * Math.PI);
+                ctx.arc(left + pathPoints[0].x * blockWidth, top + pathPoints[0].y * blockHeight, radius, 0, 2 * Math.PI);
                 ctx.closePath();
                 ctx.fill();
     
-                for (let i = 1; i < this.CursorPath.length; ++i) {
+                for (let i = 1; i < pathPoints.length; ++i) {
+                    //ctx.strokeStyle = DirectionUtils.ToColor(pathPoints[i].direction);
+
                     ctx.beginPath();
-                    ctx.moveTo(left + this.CursorPath[i - 1].x * blockWidth, top + this.CursorPath[i - 1].y * blockHeight);
-                    ctx.lineTo(left + this.CursorPath[i].x * blockWidth, top + this.CursorPath[i].y * blockHeight);
+                    ctx.moveTo(left + pathPoints[i - 1].x * blockWidth, top + pathPoints[i - 1].y * blockHeight);
+                    ctx.lineTo(left + pathPoints[i].x * blockWidth, top + pathPoints[i].y * blockHeight);
                     ctx.closePath();
                     ctx.stroke();
 
                     ctx.beginPath();
-                    ctx.arc(left + this.CursorPath[i].x * blockWidth, top + this.CursorPath[i].y * blockHeight, Math.floor(lineWidth / 2), 0, 2 * Math.PI);
+                    ctx.arc(left + pathPoints[i].x * blockWidth, top + pathPoints[i].y * blockHeight, Math.floor(lineWidth / 2), 0, 2 * Math.PI);
                     ctx.closePath();
                     ctx.fill();
                 }

@@ -1,9 +1,3 @@
-enum LineType {
-    NoLine,
-    Filled,
-    Broken
-}
-
 class Line implements Serializable {
     public type : LineType = LineType.Filled;
 
@@ -15,11 +9,6 @@ class Line implements Serializable {
     LoadSerializedData(obj: any): void {
         this.type = obj.type;
     }
-}
-
-enum IntersectType {
-    None,
-    StartPoint
 }
 
 class IntersetionElement implements Serializable {
@@ -36,11 +25,16 @@ class IntersetionElement implements Serializable {
 }
 
 class GridElement implements Serializable {
+
+    public type : GridContentType = GridContentType.None;
+
     Serialize(): any {
-        return {};
+        return {
+            type: this.type
+        };
     }
     LoadSerializedData(obj: any): void {
-
+        this.type = obj.type;
     }
 }
 
