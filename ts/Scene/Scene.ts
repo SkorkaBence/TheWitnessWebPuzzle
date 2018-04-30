@@ -14,7 +14,7 @@ abstract class Scene {
         return ((this.main as HTMLElement).querySelector(e) as HTMLElement);
     }
 
-    protected $$(e : string) : NodeListOf<HTMLElement> {
+    protected $$(e : string) : NodeListOf<Element> {
         return (this.main as HTMLElement).querySelectorAll(e);
     }
 
